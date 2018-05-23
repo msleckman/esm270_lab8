@@ -1,0 +1,103 @@
+---
+title: "LAB8_ClimateThreats"
+author: "Margaux Sleckman"
+date: "May 23, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Climate Change Threats 
+
+1. Download the appropriate set of rasters (see Table) and load them into R.
+
+2. Stack the layers and plot them (HINT: if you use the stack function, then you can just call plot once and it will plot all of the layers)
+
+3. Get an idea of the distribution of the data using hist(), cellStats(), or visually by zooming in to different sections of your rasters.
+
+4. Overlay the rasters and perform raster calculations (reclassify, overlay, maybe calc) to create a cumulative threat layer. You may do this however you deem appropriate. Some suggestions:
+
+  A quantile and sum approach, analagous to the above analysis
+  A mean threat value per raster cell
+  A maximum threat value per raster cell
+  A weighted mean
+  
+  
+
+```{r Packages}
+
+
+# install.packages(c("raster","rgdal","maps","rgeos","sp","maptools"))
+# install.packages(c("dplyr","RColorBrewer"))
+
+library(raster)
+library(rgdal)
+library(maps)
+library(rgeos)
+library(sp)
+library(maptools)
+library(dplyr)
+library(RColorBrewer)
+
+```
+
+```{r colors}
+
+cols = rev(colorRampPalette(brewer.pal(11, 'Spectral'))(255)) 
+
+#setting smaller margins for plotting
+par(mar=c(2,2,1,1))
+
+```
+
+  
+```{r LoadingData}
+
+setwd("H:/Spring 2018/ESM270-CP/lab8/esm270_lab8")
+
+
+# Three tif files for this exercise 
+acid<-raster("impact_acid.tif")
+uv<-raster("impact_uv.tif")
+sst<-raster("impact_sst.tif")
+
+#Note:Extent are same therefore no resampling needed 
+
+# plot(acid, col=cols); map('world', fill = T, col="grey")
+
+```
+```{r stack}
+
+threats_stack<-stack(acid,uv,sst)
+plot(threats_stack, col=cols)
+
+hist(threats_stack)
+cellStats(threats_stack,max)
+threats_cutoff <- quantile(uv,0.2)
+
+threats_stack <- reclassify(threats_stack,rcl=c(-Inf,0,NA))
+hist(threats_stack,main="Species Raster Values, Zeroes Removed")
+
+threats_cutoff <- quantile(threats_stack,0.8) # Find the value of the 80th percentile --> i want 20 top threats
+threats_max <- cellStats(threats_stack,max) #find the maximum
+#threats_cutoff
+#threats_max
+
+##DONT REALLY GET THIS function but it runs properly ## 
+rcl_mat <- c(-Inf,threats_cutoff,0,
+             threats_cutoff,threats_max,1)
+
+# reclassify(threats_crop, rcl=c(-Inf,quantile(threats_crop, 0.8),0, quantile (threats_crop, 0.8), cellStats(threats_crop, max),1))
+
+threats_binary <- reclassify(threats_stack,rcl=rcl_mat)
+## GETTING ERROR: "Error: all(rcl[, 2] >= rcl[, 1]) is not TRUE""
+# this sets us up for calculating 
+```
+
+```{r plots_cumthreats}
+
+
+```
+
