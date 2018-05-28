@@ -53,7 +53,7 @@ par(mar=c(2,2,1,1))
 ```
 
   
-```{r LoadingData}
+```{r Loading_Data}
 
 setwd("H:/Spring 2018/ESM270-CP/lab8/esm270_lab8")
 
@@ -68,10 +68,17 @@ sst<-raster("impact_sst.tif")
 # plot(acid, col=cols); map('world', fill = T, col="grey")
 
 ```
-```{r stack}
 
+```{r Stack}
+
+#
 threats_stack<-stack(acid,uv,sst)
 plot(threats_stack, col=cols)
+
+#resample
+
+#climatethreats_res <- resample(uv, acid, sst, method='ngb',progress='text')
+#code above doesn't work
 
 hist(threats_stack)
 cellStats(threats_stack,max)
@@ -91,8 +98,10 @@ rcl_mat <- c(-Inf,threats_cutoff,0,
 
 # reclassify(threats_crop, rcl=c(-Inf,quantile(threats_crop, 0.8),0, quantile (threats_crop, 0.8), cellStats(threats_crop, max),1))
 
+
 threats_binary <- reclassify(threats_stack,rcl=rcl_mat)
 ## GETTING ERROR: "Error: all(rcl[, 2] >= rcl[, 1]) is not TRUE""
+
 # this sets us up for calculating 
 ```
 
