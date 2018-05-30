@@ -40,7 +40,8 @@ library(sp)
 library(maptools)
 library(dplyr)
 library(RColorBrewer)
-
+library(ggplot2)
+library(sf)
 ```
 
 ```{r colors}
@@ -62,7 +63,8 @@ setwd("H:/Spring 2018/ESM270-CP/lab8/esm270_lab8")
 acid<-raster("impact_acid.tif")
 uv<-raster("impact_uv.tif")
 sst<-raster("impact_sst.tif")
-
+all_spp <- raster(("R:/Spring2018/ESM270/Week8_R_hotspots/ca_curr_sp_rich.tif"))
+plot(all_spp,col=cols)
 #Note:Extent are same therefore no resampling needed 
 
 # plot(acid, col=cols); map('world', fill = T, col="grey")
@@ -74,8 +76,10 @@ sst<-raster("impact_sst.tif")
 #
 threats_stack<-stack(acid,uv,sst)
 plot(threats_stack, col=cols)
+#threats_stack <- resample(threats_stack,method='ngb',progress='text')
 
 #resample
+spp_crop <- crop(threats_stack, all_spp) #Crop the threats layer to the same extent at species
 
 #climatethreats_res <- resample(uv, acid, sst, method='ngb',progress='text')
 #code above doesn't work
@@ -88,15 +92,18 @@ cellStats(threats_stack,max)
 ```{r UV}
 
 # pre-raster calculation manipulation
-uv_cutoff<-quantile(uv, 0.8)
-uv_max<-cellStats(uv, max)
-rcl_mat_uv<-c(-Inf,uv_cutoff,0,
+
+uv <- reclassify(uv, rcl=c(-Inf,0,NA))
+hist(uv)
+
+uv_cutoff <- quantile(uv, 0.8)
+
+uv_max <- cellStats(uv, max)
+
+rcl_mat_uv <- c(-Inf,uv_cutoff,0,
              uv_cutoff,uv_max,1)
 
-mean(uv)
-
-uv_binary<-reclassify(uv, rcl = rcl_mat_uv)
-uv_binary
+uv_binary <- reclassify(uv, rcl = rcl_mat_uv)
 
 uv_mean <- mean(uv)
 
@@ -105,19 +112,22 @@ uv_mean <- mean(uv)
 ```{r acid}
 
 # pre-raster calculation manipulation
-acid_cutoff<-quantile(acid, 0.8)
-acid_max<-cellStats(acid, max)
-rcl_mat_acid<-c(-Inf,acid_cutoff,0,
+acid <- reclassify(acid, rcl=c(-Inf,0,NA))
+hist(acid)
+acid_cutoff <- quantile(acid, 0.8)
+acid_max <- cellStats(acid, max)
+rcl_mat_acid <- c(-Inf,acid_cutoff,0,
              acid_cutoff,acid_max,1)
 
-acid_binary<-reclassify(acid, rcl = rcl_mat_acid)
-acid_binary
+acid_binary <- reclassify(acid, rcl = rcl_mat_acid)
 acid_mean <- mean(acid)
 
 ```
 
 ```{r sst}
 # pre-raster calculation manipulation
+sst <- reclassify(sst, rcl=c(-Inf,0,NA))
+hist(sst)
 sst_cutoff <- quantile(sst, 0.8)
 sst_max <- cellStats(sst, max)
 
@@ -125,27 +135,38 @@ rcl_mat_sst <- c(-Inf, sst_cutoff, 0,
                   sst_cutoff, sst_max, 1)
 
 sst_binary<-reclassify(sst, rcl=rcl_mat_sst)
-
 sst_mean <- mean(sst)
 sst_cutoff <- quantile(sst_mean, 0.8)
-sst_cutoff
+
 ```
 
 4. Overlay
 ```{r Overlay&plot}
 
-climateXY<-function(x,y,z){
-  return(x+y+z)
+climateXY <- function(x,y,z){
+  return((x+y+z)/3)
+  #climatethreatslayers <- c(x,y,z)
+  #return(mean(climatethreatslayers, na.rm=TRUE))
 }
 
+
 #Using quantiles
-climatethreats <- overlay(uv_binary, acid_binary, sst_binary, fun=climateXY)
+climatethreats <- overlay(uv, acid, sst, fun=climateXY)
+climatethreats_binary <- overlay(uv_binary, acid_binary, sst_binary, fun=climateXY)
 #using means 
-climatethreats <- overlay(uv_mean, acid_mean, sst_mean, fun=climateXY)
+climatethreats_mean <- overlay(uv_mean, acid_mean, sst_mean, fun=climateXY)
  # --> figure out which is most interesting
- 
+#climatethreats_max <- overlay(uv_max, acid_max, sst_max, fun=climateXY)
+
+
 binary_cols<-c("white","firebrick")
+
 plot(climatethreats)
+hist(climatethreats)
+
+plot(climatethreats, main="Distribution of the Mean Cumulative climate change threats on West Coast", sub="variables: uv, acidity, sst", legend=T, ext=extent(-130,-110,20,50)); map('world',fill=T,add=T,col='gray80')
+
+legend("bottom right", title = "threat value")
 
 ```
 
