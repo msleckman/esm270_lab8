@@ -69,7 +69,7 @@ sst<-raster("impact_sst.tif")
 
 ```
 
-```{r Stack}
+```{r Stack_hist}
 
 #
 threats_stack<-stack(acid,uv,sst)
@@ -82,7 +82,76 @@ plot(threats_stack, col=cols)
 
 hist(threats_stack)
 cellStats(threats_stack,max)
-threats_cutoff <- quantile(uv,0.2)
+
+```
+
+```{r UV}
+
+# pre-raster calculation manipulation
+uv_cutoff<-quantile(uv, 0.8)
+uv_max<-cellStats(uv, max)
+rcl_mat_uv<-c(-Inf,uv_cutoff,0,
+             uv_cutoff,uv_max,1)
+
+mean(uv)
+
+uv_binary<-reclassify(uv, rcl = rcl_mat_uv)
+uv_binary
+
+uv_mean <- mean(uv)
+
+```
+
+```{r acid}
+
+# pre-raster calculation manipulation
+acid_cutoff<-quantile(acid, 0.8)
+acid_max<-cellStats(acid, max)
+rcl_mat_acid<-c(-Inf,acid_cutoff,0,
+             acid_cutoff,acid_max,1)
+
+acid_binary<-reclassify(acid, rcl = rcl_mat_acid)
+acid_binary
+acid_mean <- mean(acid)
+
+```
+
+```{r sst}
+# pre-raster calculation manipulation
+sst_cutoff <- quantile(sst, 0.8)
+sst_max <- cellStats(sst, max)
+
+rcl_mat_sst <- c(-Inf, sst_cutoff, 0, 
+                  sst_cutoff, sst_max, 1)
+
+sst_binary<-reclassify(sst, rcl=rcl_mat_sst)
+
+sst_mean <- mean(sst)
+sst_cutoff <- quantile(sst_mean, 0.8)
+sst_cutoff
+```
+
+4. Overlay
+```{r Overlay&plot}
+
+climateXY<-function(x,y,z){
+  return(x+y+z)
+}
+
+#Using quantiles
+climatethreats <- overlay(uv_binary, acid_binary, sst_binary, fun=climateXY)
+#using means 
+climatethreats <- overlay(uv_mean, acid_mean, sst_mean, fun=climateXY)
+ # --> figure out which is most interesting
+ 
+binary_cols<-c("white","firebrick")
+plot(climatethreats)
+
+```
+
+```{r random}
+
+threats_cutoff <- quantile(uv,0.8)
 
 threats_stack <- reclassify(threats_stack,rcl=c(-Inf,0,NA))
 hist(threats_stack,main="Species Raster Values, Zeroes Removed")
@@ -107,6 +176,8 @@ threats_binary <- reclassify(threats_stack,rcl=rcl_mat)
 
 ```{r plots_cumthreats}
 
+plot(threats_binary, col=binary_cols, legend=F, main="Top 20% Climate threats")
+map('world', fill=T, add=T, col='grey')
 
 ```
 
