@@ -63,17 +63,17 @@ setwd("H:/Spring 2018/ESM270-CP/lab8/esm270_lab8")
 acid<-raster("impact_acid.tif")
 uv<-raster("impact_uv.tif")
 sst<-raster("impact_sst.tif")
-all_spp <- raster(("R:/Spring2018/ESM270/Week8_R_hotspots/ca_curr_sp_rich.tif"))
-plot(all_spp,col=cols)
-#Note:Extent are same therefore no resampling needed 
+all_spp <- raster(("ca_curr_sp_rich.tif"))
 
+plot(all_spp,col=cols)
+
+#Note:Extent are same therefore no resampling needed 
 # plot(acid, col=cols); map('world', fill = T, col="grey")
 
 ```
 
 ```{r Stack_hist}
 
-#
 threats_stack<-stack(acid,uv,sst)
 plot(threats_stack, col=cols)
 #threats_stack <- resample(threats_stack,method='ngb',progress='text')
@@ -166,7 +166,71 @@ hist(climatethreats)
 
 plot(climatethreats, main="Distribution of the Mean Cumulative climate change threats on West Coast", sub="variables: uv, acidity, sst", legend=T, ext=extent(-130,-110,20,50)); map('world',fill=T,add=T,col='gray80')
 
-legend("bottom right", title = "threat value")
+#legend("bottom right", title = "threat value")
+
+```
+
+
+```{r crop}
+
+threats_crop <- crop(climatethreats, all_spp)
+plot(threats_crop)
+spp_res1 <- resample(all_spp,threats_crop, method='ngb',progress='text')
+plot(spp_res1, col=cols)
+
+threats_spp_stacked<-stack(threats_crop, spp_res1)
+plot(threats_spp_stacked, col=cols)
+
+```
+
+```{r spp_parcing}
+
+hist(spp_res1,main="Species Raster Values")
+
+spp_res1 <- reclassify(spp_res1,rcl=c(-Inf,0,NA))
+hist(spp_res1,main="Species Raster Values, Zeroes Removed") 
+
+#top 20%
+spp_cutoff1 <- quantile(spp_res1,0.8) # Find the value of the 80th percentile
+spp_maxVal1 <- cellStats(spp_res1,max) #find the maximum
+
+# Our reclassification matrix. MAKE SURE YOU KNOW WHAT THIS MEANS
+rcl_mat1 <- c(-Inf,spp_cutoff1,0,
+            spp_cutoff1,spp_maxVal1,1)
+
+#rcl_mat = recl_matrix and it means...from -infinity to spp_cut, this equal to 0. Otherwise 1.
+# Reclassify the species layer - call it binary because we should end up with 0 or 1. 
+spp_binary1 <- reclassify(spp_res1,rcl=rcl_mat1)
+
+```
+
+```{r PlotingSpeciesBinary}
+
+binary_cols<-c("blue","pink")
+#run the two bottom functions TOGETHER: 
+plot(spp_binary1, col=binary_cols, legend=F, main="Top 20% of Species Richness");map('world', fill=T, add=T, col='grey')
+
+```
+
+```{r hotspots_CC_spp}
+
+# Function to add x + y
+
+sumCC_spp<-function(x,y){
+  return(x+y)
+}
+
+# the hotspots 
+CC_hotspots<-overlay(spp_binary1, threats_crop, fun=addXY)
+plot(CC_hotspots)
+
+
+#hotspot_cols <- c("white","lightblue","firebrick") #
+plot(CC_hotspots,legend=F,main="Hotspots");map('world',fill=T,add=T,col='gray80')
+
+
+#plot(CC_hotspots,ext=extent(-135,-125,30,35),main= "Climate Change Hotspots",legend=F); map('world',fill=T,add=T,col='gray80')
+
 
 ```
 
