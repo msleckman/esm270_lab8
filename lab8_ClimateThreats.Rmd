@@ -158,7 +158,6 @@ climatethreats_mean <- overlay(uv_mean, acid_mean, sst_mean, fun=climateXY)
  # --> figure out which is most interesting
 #climatethreats_max <- overlay(uv_max, acid_max, sst_max, fun=climateXY)
 
-
 binary_cols<-c("white","firebrick")
 
 plot(climatethreats)
@@ -175,6 +174,7 @@ plot(climatethreats, main="Distribution of the Mean Cumulative climate change th
 
 threats_crop <- crop(climatethreats, all_spp)
 plot(threats_crop)
+
 spp_res1 <- resample(all_spp,threats_crop, method='ngb',progress='text')
 plot(spp_res1, col=cols)
 
@@ -191,7 +191,7 @@ spp_res1 <- reclassify(spp_res1,rcl=c(-Inf,0,NA))
 hist(spp_res1,main="Species Raster Values, Zeroes Removed") 
 
 #top 20%
-spp_cutoff1 <- quantile(spp_res1,0.8) # Find the value of the 80th percentile
+spp_cutoff1 <- quantile(spp_res1,0.75) # Find the value of the 80th percentile
 spp_maxVal1 <- cellStats(spp_res1,max) #find the maximum
 
 # Our reclassification matrix. MAKE SURE YOU KNOW WHAT THIS MEANS
@@ -234,6 +234,37 @@ plot(CC_hotspots,legend=F,main="Hotspots");map('world',fill=T,add=T,col='gray80'
 
 ```
 
+```{r top20CC_threats}
+
+
+
+cc_threats_binary <- reclassify(threats_crop, rcl=c(-Inf,quantile(threats_crop, 0.75),0, quantile (threats_crop, 0.75), cellStats(threats_crop, max),1))
+plot(cc_threats_binary)
+
+cc_threats_binary2<-reclassify(threats_crop, rcl=c(-Inf,quantile(threats_crop, 0.8),0, quantile (threats_crop, 0.8), cellStats(threats_crop, max),1))
+plot(cc_threats_binary2)
+
+```
+
+
+```{r top25ccthreats_top25spp}
+
+sumCC_spp2<-function(x,y){
+  return(x+y)
+}
+
+CC_hotspots25<-overlay(cc_threats_binary, spp_binary1, fun=sumCC_spp2)
+hotspot_cols_cc<- c("white", "firebrick","gold1")
+#par(bg='blue')
+plot(CC_hotspots25, main="Overlay of biodiversity hotspots and cumulative climate change threats", legend=F);map('world', fill=T, add=T,col='gray80')
+
+hotspotMap_25 + opts(plot.background=theme_rect(fill="yellow"),panel.background=theme_rect(fill="purple"))
+```
+```{r}
+
+```
+
+ 
 ```{r random}
 
 threats_cutoff <- quantile(uv,0.8)
