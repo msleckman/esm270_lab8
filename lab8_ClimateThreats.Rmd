@@ -40,8 +40,12 @@ library(sp)
 library(maptools)
 library(dplyr)
 library(RColorBrewer)
+
 library(ggplot2)
 library(sf)
+install.packages("tmap")
+library(tmap)
+
 ```
 
 ```{r colors}
@@ -149,6 +153,8 @@ climateXY <- function(x,y,z){
   #return(mean(climatethreatslayers, na.rm=TRUE))
 }
 
+install.packages("ggmap")
+library(ggmap)
 
 #Using quantiles
 climatethreats <- overlay(uv, acid, sst, fun=climateXY)
@@ -166,6 +172,26 @@ hist(climatethreats)
 plot(climatethreats, main="Distribution of the Mean Cumulative climate change threats on West Coast", sub="variables: uv, acidity, sst", legend=T, ext=extent(-130,-110,20,50)); map('world',fill=T,add=T,col='gray80')
 
 #legend("bottom right", title = "threat value")
+
+map("world")
+
+qtm(CC_hotspots25, fill = "climatethreats")
+
+data("World")
+data("land")
+data("us.cities")
+data("state.vbm")
+
+tm_shape(CC_hotspots)+
+  tm_fill(simplify = 0.5)+
+  tm_raster("black")
+
+
+  tm_raster(CC_hotspots)
+names(CC_hotspots)
+
+
+
 
 ```
 
@@ -256,15 +282,43 @@ sumCC_spp2<-function(x,y){
 CC_hotspots25<-overlay(cc_threats_binary, spp_binary1, fun=sumCC_spp2)
 hotspot_cols_cc<- c("white", "firebrick","gold1")
 #par(bg='blue')
-plot(CC_hotspots25, main="Overlay of biodiversity hotspots and cumulative climate change threats", legend=F);map('world', fill=T, add=T,col='gray80')
+plot(CC_hotspots25, main="Overlay of biodiversity hotspots and cumulative climate change threats", legend=T);map('world', fill=T, add=T,col='gray80')
 
-hotspotMap_25 + opts(plot.background=theme_rect(fill="yellow"),panel.background=theme_rect(fill="purple"))
+#hotspotMap_25 + opts(plot.background=theme_rect(fill="yellow"),panel.background=theme_rect(fill="purple"))
 ```
 ```{r}
 
+
+tm_shape(World)+
+  tm_fill("bisque3")+
+    tm_borders("black")+
+  tm_shape(states)
+  #tm_shape(usaMapEnv)+
+  #tm_dots()+
+  tm_shape(CC_hotspots25) + 
+  tm_raster(breaks=c(0,1,2,3), labels = c("low","medium","high"), palette = "Reds", title = "Climate Change\nBiodiversity hotspots")+
+  tm_layout(bg.color = 'lightblue', frame = T, earth.boundary = T)+
+  tm_legend(legend.position = c("right", "top"), frame=TRUE, bg.color="antiquewhite")+
+  tm_shape(MPA)+
+  tm_fill("blue", panel.show=TRUE, legend.show =  TRUE)+
+  tm_compass(type="arrow", position=c("left", "bottom"))+
+  tm_scale_bar(breaks = NULL, width = NA, size = 0.5, text.color = NA,
+  color.dark = "black", color.light = "white", lwd = 1, position =c("left","bottom"),
+  just = NA)
+  
+
+
+
 ```
 
- 
+ tm_layout(bg.color = 'lightblue', frame = T, earth.boundary = T)+
+  tm_legend(legend.position = c("right", "top"), frame=TRUE, bg.color="antiquewhite")+```{r mpa}
+install.packages("sf")
+libary(sf)
+MPA<-st_read(dsn=".", layer="National Marine Sanctuaries")
+
+```
+
 ```{r random}
 
 threats_cutoff <- quantile(uv,0.8)
